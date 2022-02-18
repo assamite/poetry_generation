@@ -6,7 +6,7 @@ from gensim import models
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
-model_path = "/home/pihatonttu/code/poetry_generation/models/GoogleNews-vectors-negative300.bin"
+model_path = "../models/GoogleNews-vectors-negative300.bin"
 model = models.KeyedVectors.load_word2vec_format(model_path, binary=True)
 
 
@@ -42,7 +42,7 @@ def word_lists_to_keywords(words):
 
 def combine_queries(query_dict):
     #query_dict['all'] = [query_dict['original']]
-    query_dict['all'].expand(word_lists_to_keywords(query_dict['permutations']))
+    query_dict['all'] = word_lists_to_keywords(query_dict['permutations'])
     print(query_dict['all'])
 
 

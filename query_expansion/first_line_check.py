@@ -8,7 +8,7 @@ import torch
 DEVICE = torch.device("cpu")
 BASE_MODEL = "facebook/mbart-large-cc25"
 tokenizer = MBart50TokenizerFast.from_pretrained("facebook/mbart-large-cc25", src_lang="en_XX", tgt_lang="en_XX",)
-MODEL_FILE = "/home/pihatonttu/code/poetry_generation/models/first-line-en-mbart/"
+MODEL_FILE = "../models/first-line-en-mbart/"
 
 
 # load fine-tuned model
