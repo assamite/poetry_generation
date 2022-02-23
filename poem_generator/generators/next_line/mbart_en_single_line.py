@@ -11,25 +11,16 @@ from poem_generator.io.candidates import PoemLine, PoemLineList
 from poem_generator.utils import remove_punct
 from poem_generator.utils import filter_candidates
 
-# This file contains the code for generating the first line with all supported models.
+# This file contains the code for generating the next line with all supported models.
 # In future, it can become a package with several file (one for each implementation)
 
 DEVICE = torch.device('cpu')
 BASE_MODEL = "facebook/mbart-large-cc25"
-MODEL_FILE = "models/first-line-en-mbart/pytorch_model.bin"
+MODEL_FILE = "models/wikisource-fi-mbart.pytorch_model.bin"
 #DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def get_tokenizer():
-    tokenizer = MBartTokenizer.from_pretrained(
-        BASE_MODEL,
-        src_lang="en_XX",
-        tgt_lang="en_XX",
-    )
-
-    return tokenizer
-
-def get_model():
+def get_tokenizer_and_model():
     tokenizer = MBartTokenizer.from_pretrained(
         BASE_MODEL,
         src_lang="en_XX",
@@ -45,14 +36,15 @@ def get_model():
     model.load_state_dict(torch.load(MODEL_FILE, map_location=torch.device(DEVICE)))
     model.to(DEVICE)
 
-    return model
+    return tokenizer, model
 
-def generate(keywords, tokenizer, model) -> PoemLineList:
+
+def generate(poem_state: PoemLineList, tokenizer, model) -> PoemLineList:
     """
-    Implementation of the first line poem generator using mbart for English language
+    Implementation of next line poem generator using mbart for finnish language
     :return:
     """
-    source = keywords
+    source = poem_state[-1].text
     encoded = tokenizer.encode(
         source, padding="max_length", max_length=32, truncation=True
     )
