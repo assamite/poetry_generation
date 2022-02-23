@@ -16,15 +16,15 @@ from poem_generator.utils import filter_candidates
 
 DEVICE = torch.device('cpu')
 BASE_MODEL = "facebook/mbart-large-cc25"
-MODEL_FILE = "models/first-line-fi-20-epochs/pytorch_model.bin"
+MODEL_FILE = "models/first-line-en-mbart/pytorch_model.bin"
 #DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def get_tokenizer():
     tokenizer = MBartTokenizer.from_pretrained(
         BASE_MODEL,
-        src_lang="fi_FI",
-        tgt_lang="fi_FI",
+        src_lang="en_XX",
+        tgt_lang="en_XX",
     )
 
     return tokenizer
@@ -32,13 +32,13 @@ def get_tokenizer():
 def get_model():
     tokenizer = MBartTokenizer.from_pretrained(
         BASE_MODEL,
-        src_lang="fi_FI",
-        tgt_lang="fi_FI",
+        src_lang="en_XX",
+        tgt_lang="en_XX",
     )
 
     logging.info("Loading base model {}".format(BASE_MODEL))
     model = MBartForConditionalGeneration.from_pretrained(BASE_MODEL)
-    model.config.decoder_start_token_id = tokenizer.lang_code_to_id["fi_FI"]
+    model.config.decoder_start_token_id = tokenizer.lang_code_to_id["en_XX"]
 
     model.resize_token_embeddings(len(tokenizer))  # is this really necessary here?
     logging.info("Model vocab size is {}".format(model.config.vocab_size))

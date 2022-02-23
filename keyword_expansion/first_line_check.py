@@ -38,11 +38,9 @@ def generate_lines(keywords, model, tokenizer):
     sample_outputs = model.generate(
         encoded,
         do_sample=True,
-        max_length=32,
-        num_beams=5,
-        repetition_penalty=5.0,
-        early_stopping=True,
-        num_return_sequences=5,
+        max_length=16,
+        temperature=5.,
+        top_k=5,
     )
 
     return get_candidates(sample_outputs)

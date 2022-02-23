@@ -14,9 +14,10 @@ from poem_generator.utils import filter_candidates
 # This file contains the code for generating the next line with all supported models.
 # In future, it can become a package with several file (one for each implementation)
 
+DEVICE = torch.device('cpu')
 BASE_MODEL = "facebook/mbart-large-cc25"
 MODEL_FILE = "models/wikisource-fi-mbart.pytorch_model.bin"
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def get_tokenizer_and_model():
@@ -53,7 +54,7 @@ def generate(poem_state: PoemLineList, tokenizer, model) -> PoemLineList:
         encoded,
         do_sample=True,
         max_length=16,
-        temperature=5.,
+        temperature=2.5,
         top_k=5,
     )
 
