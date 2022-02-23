@@ -26,9 +26,9 @@ class DiversityEstimator:
             line1 = set(lemma_lines[i])
             for j in range(i+1, len(lemma_lines)):
                 line2 = set(lemma_lines[j])
-                union = line1 | line2
-                intersection = line1 & line2
-                similarity = len(intersection) / len(union)
+                divisor = len(line1) + len(line2)
+                dividend = 2 * len(line1 & line2)
+                similarity = dividend / divisor
                 similarities.append(similarity)
 
         average_similarity = sum(similarities) / len(similarities)
@@ -42,7 +42,15 @@ if __name__ == "__main__":
     ann = SyntacticAnnotator(nlp)
     estimator = DiversityEstimator(ann)
 
-    lines = ["This is a test.", "This was not a test.", "This will be a test."]
+    lines = ["This is a test.", "This should not be a test.", "This will be a test."]
+    div = estimator.predict(lines)
+    print(div)
+
+    lines = ["This is a test.", "This is a test.", "This will be a test."]
+    div = estimator.predict(lines)
+    print(div)
+
+    lines = ["This is a test.", "This is a test.", "This is a test."]
     div = estimator.predict(lines)
     print(div)
 
