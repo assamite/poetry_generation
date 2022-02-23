@@ -17,16 +17,15 @@ class DiversityEstimator:
     def predict(self, lines: List[str], stopwords: bool = True):
         annotated_lines = [self.annotator.annotate(line) for line in lines]
         if stopwords:
-            lemmatised_lines = [[token.lemma for token in line] for line in annotated_lines]
+            lemma_lines = [[token.lemma for token in line] for line in annotated_lines]
         else:
-            lemmatised_lines = [[token.lemma for token in line if not token.is_stop] for line in annotated_lines]
+            lemma_lines = [[token.lemma for token in line if not token.is_stop] for line in annotated_lines]
 
-        print(lemmatised_lines)
         similarities = []
-        for i in range(len(lemmatised_lines)):
-            line1 = set(lemmatised_lines[i])
-            for j in range(i+1, len(lemmatised_lines)):
-                line2 = set(lemmatised_lines[j])
+        for i in range(len(lemma_lines)):
+            line1 = set(lemma_lines[i])
+            for j in range(i+1, len(lemma_lines)):
+                line2 = set(lemma_lines[j])
                 union = line1 | line2
                 intersection = line1 & line2
                 similarity = len(intersection) / len(union)
