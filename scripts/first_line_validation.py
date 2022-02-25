@@ -6,6 +6,7 @@ import os
 import random
 import sys
 import time
+import json
 
 import requests
 import spacy
@@ -16,17 +17,53 @@ from transformers import (
     MBartForConditionalGeneration,
 )
 
-from quality_estimation.coherence_estimator import SyntacticAnnotator
-from quality_estimation.diversity_estimator import DiversityEstimator
 from poem_generator.io.candidates import PoemLineList
 
 DEVICE = torch.device('cpu')
 BASE_MODEL = "facebook/mbart-large-cc25"
-MODEL_FILEPATH = os.path.join(os.path.dirname(__file__), "..", "models/first-line-en-mbart-12750/pytorch_model.bin")
+MODEL_FILEPATH = os.path.join(os.path.dirname(__file__), "..", "models/first-line-en-mbart-15000/pytorch_model.bin")
 #DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+
+from typing import List
+
+from quality_estimation.coherence_estimator import SyntacticAnnotator
+
+
+class DiversityEstimator:
+    """Estimates the diversity of a set of poem lines.
+    """
+    def __init__(self, annotator: SyntacticAnnotator):
+        self.annotator = annotator
+
+    def train(self, **kwargs):
+        """Dummy implementation.
+        """
+        pass
+
+    def predict(self, lines: List[str], stopwords: bool = True):
+        annotated_lines = [self.annotator.annotate(line) for line in lines]
+        if stopwords:
+            lemma_lines = [[token.lemma for token in line] for line in annotated_lines]
+        else:
+            lemma_lines = [[token.lemma for token in line if not token.is_stop] for line in annotated_lines]
+
+        similarities = []
+        for i in range(len(lemma_lines)):
+            line1 = set(lemma_lines[i])
+            for j in range(i+1, len(lemma_lines)):
+                line2 = set(lemma_lines[j])
+                divisor = len(line1) + len(line2)
+                dividend = 2 * len(line1 & line2)
+                similarity = dividend / divisor
+                similarities.append(similarity)
+
+        average_similarity = sum(similarities) / len(similarities) if len(similarities) > 0 else 1.0
+        diversity = 1 - average_similarity
+        return diversity
 
 
 def read_nouns_and_verbs():
@@ -127,24 +164,26 @@ def generate(keywords, tokenizer, model, temperature=1.0) -> PoemLineList:
 if __name__ == "__main__":
     sample_size = 5
 
-    nouns, verbs = read_nouns_and_verbs()
-    keywords = sample_keywords(nouns, verbs, sample_size)
-    #keywords = read_keywords('keywords_noun_verb.txt')
+    #nouns, verbs = read_nouns_and_verbs()
+    #keywords = sample_keywords(nouns, verbs, sample_size)
+    keywords = read_keywords('keywords_noun_verb_5.txt')
     print("Prepared {} keyword pairs. (first:'{}' last:'{}')".format(len(keywords), keywords[0], keywords[-1]))
-    write_keywords(keywords, 'keywords_noun_verb_{}.txt'.format(sample_size))
+    #write_keywords(keywords, 'keywords_noun_verb_{}.txt'.format(sample_size))
 
     tokenizer, model = get_tokenizer_and_model()
     nlp = spacy.load("en_core_web_sm")
     ann = SyntacticAnnotator(nlp)
     estimator = DiversityEstimator(ann)
-    temps = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
+    temps = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
 
+    generated_lines = {}
     mean_diversities = []
     for temp in temps:
+        generated_lines[temp] = []
         all_lines = []
         div_estimates = []
         div_stop_estimates = []
-        save_filepath = "first-line-noun-verb-12750-temp-{}.txt".format(temp)
+        save_filepath = "first-line-noun-verb-{}-model-15000-temp-{}.txt".format(len(keywords), temp)
 
         i = 0
         with open(save_filepath, 'w') as f:
@@ -153,6 +192,7 @@ if __name__ == "__main__":
                 i = i + 1
                 line_candidates = generate(kw, tokenizer, model, temperature=temp)
                 lines = line_candidates
+                generated_lines[temp].append((kw, lines))
                 print(lines)
                 f.write(str(lines) + "\n")
                 div = estimator.predict(lines)
@@ -163,16 +203,28 @@ if __name__ == "__main__":
                 div_mean = (sum(div_estimates) / len(div_estimates))
                 div_stop_mean = (sum(div_stop_estimates) / len(div_stop_estimates))
                 t2 = time.monotonic()
-                s = "Temp={} {:0>3}: Keywords: '{}' Diversity: {:.4f} ({:.4f}) Running mean: {:.4f} ({:.4f}) ({:.5f}s)"\
+                s = "Temp={} {:0>3}: Keywords: '{}' Diversity: {:.4f} ({:.4f}) Running mean: {:.5f} ({:.5f}) ({:.1f}s)"\
                     .format(temp, i, kw, div, div_stop, div_mean, div_stop_mean, t2 - t)
                 print(s)
                 f.write(s + "\n")
 
-        mean_div = sum(div_estimates) / len(div_estimates)
-        mean_div_stop = sum(div_stop_estimates) / len(div_stop_estimates)
-        mean_diversities.append((temp, mean_div, mean_div_stop))
-        print("Temp: {} Mean diversity: {} (without stopwords: {})".format(temp, mean_div, mean_div_stop))
+            mean_div = sum(div_estimates) / len(div_estimates)
+            mean_div_stop = sum(div_stop_estimates) / len(div_stop_estimates)
+            mean_diversities.append((temp, mean_div, mean_div_stop))
+            s = "Temp: {} Mean diversity: {} (without stopwords: {})".format(temp, mean_div, mean_div_stop)
+            print(s)
+            f.write(s + "\n")
+            s = "All diversities:\n {}".format(str(div_estimates))
+            print(s)
+            f.write(s + "\n")
+            s = "All diversities (without stopwords):\n {}".format(str(div_stop_estimates))
+            print(s)
+            f.write(s + "\n")
 
     print(mean_diversities)
+
+    with open('lines_noun_verb_{}_model-15000-all.json'.format(len(keywords)), 'w') as f:
+        json.dump(generated_lines, f)
+
 
 
