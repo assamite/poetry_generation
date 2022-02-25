@@ -7,7 +7,9 @@ import random
 import sys
 import time
 import json
+from typing import List
 
+import numpy as np
 import requests
 import spacy
 
@@ -18,6 +20,7 @@ from transformers import (
 )
 
 from poem_generator.io.candidates import PoemLineList
+from quality_estimation.coherence_estimator import SyntacticAnnotator
 
 DEVICE = torch.device('cpu')
 BASE_MODEL = "facebook/mbart-large-cc25"
@@ -26,11 +29,6 @@ MODEL_FILEPATH = os.path.join(os.path.dirname(__file__), "..", "models/first-lin
 
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
-
-from typing import List
-
-from quality_estimation.coherence_estimator import SyntacticAnnotator
 
 
 class DiversityEstimator:
@@ -214,10 +212,10 @@ if __name__ == "__main__":
             s = "Temp: {} Mean diversity: {} (without stopwords: {})".format(temp, mean_div, mean_div_stop)
             print(s)
             f.write(s + "\n")
-            s = "All diversities:\n {}".format(str(div_estimates))
+            s = "All diversities (std: {}):\n {}".format(np.std(div_estimates), str(div_estimates))
             print(s)
             f.write(s + "\n")
-            s = "All diversities (without stopwords):\n {}".format(str(div_stop_estimates))
+            s = "All diversities without stopwords (std {}):\n {}".format(np.std(div_stop_estimates), str(div_stop_estimates))
             print(s)
             f.write(s + "\n")
 
